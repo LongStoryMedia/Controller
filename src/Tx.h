@@ -2,28 +2,30 @@
 #define TX_H
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "Lcd.h"
+#include <Bounce2.h>
 
-const int OFFSET_INCREMENT = 200;
-const size_t DOC_SIZE = JSON_OBJECT_SIZE(8);
+typedef void (*strCb)(String str);
 
 class Tx
 {
 private:
     // pins
-    const uint8_t thrustPin = 9;
-    const uint8_t yawPin = 1;
-    const uint8_t pitchPin = 3;
-    const uint8_t rollPin = 2;
+    const uint8_t thrustPin = A0;
+    const uint8_t yawPin = A1;
+    const uint8_t rollPin = A2;
+    const uint8_t pitchPin = A3;
+    const uint8_t searchPin = 9;
     int16_t thrust;
     int16_t roll;
     int16_t pitch;
     int16_t yaw;
-    uint32_t lastTransmissionTime;
+    String atCommand(char *cmd);
+    bool isConnected();
 
 public:
-    void send(Uart serial);
-    void prepare(Lcd lcd);
-    StaticJsonDocument<DOC_SIZE> doc;
+    void prepare(JsonVariant doc);
+    void start(strCb cb, void (*func)());
+    void hummingbirdConnect(strCb cb);
+    bool connected;
 };
 #endif
