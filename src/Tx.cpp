@@ -1,60 +1,76 @@
-#include "Tx.h"
+#include "config.h"
 
-void Tx::prepare(JsonVariant doc)
+#if defined RC
+uint8_t address[][6] = {"bird", "nest"};
+#endif
+
+void Tx::prepare()
 {
-    // Servo.writeMicroseconds 1000 is off, 2000 is full
-    thrust = map(analogRead(thrustPin), 55, 905, 1000, 2000);
-    roll = map(analogRead(rollPin), 0, 1023, -180, 180);
-    pitch = map(analogRead(pitchPin), 0, 1015, -180, 180);
-    yaw = map(analogRead(yawPin), 90, 910, 180, -180);
-    doc["roll"] = roll < 10 && roll > -10 ? 0 : roll;
-    doc["pitch"] = pitch < 10 && pitch > -10 ? 0 : pitch;
-    doc["yaw"] = yaw < 10 && yaw > -10 ? 0 : yaw;
-    doc["thrust"] = thrust;
+    thrust = constrain(map(analogRead(thrustPin), 55, 905, 0, 180), 0, 180);
+    roll = constrain(map(analogRead(rollPin), 0, 1023, -180, 180), -180, 180);
+    pitch = constrain(map(analogRead(pitchPin), 0, 1015, -180, 180), -180, 180);
+    yaw = constrain(map(analogRead(yawPin), 90, 910, 180, -180), -180, 180);
+    // dead zones
+    packet.yaw = yaw < 10 && yaw > -10 ? 0 : yaw;
+    packet.pitch = pitch < 10 && pitch > -10 ? 0 : pitch;
+    packet.roll = roll < 10 && roll > -10 ? 0 : roll;
+    packet.thrust = thrust;
 }
 
-void Tx::hummingbirdConnect(strCb cb)
+void Tx::scan(atCb cb)
 {
-    cb(atCommand("at+conA4DA32550629"));
-    connected = isConnected();
-    delay(500);
+    cb(atCommand("AT+SHOW?"));
+    delay(2000);
+    cb(atCommand("AT+DESC?"));
+    delay(2000);
 }
 
-void Tx::start(strCb cb, void (*func)())
+menu Tx::hummingbirdConnect()
 {
-    connected = false;
-    // cb(atCommand("at+pio11"));
-    cb(atCommand("at+renew"));
-    cb(atCommand("at+noti1"));
-    Serial1.end();
-    Serial1.begin(9600);
-    cb(atCommand("at+baud5"));
-    Serial1.end();
-    Serial1.begin(38400);
-    cb(atCommand("at+baud?"));
-    cb(atCommand("at+imme0"));
-    cb(atCommand("at+role1"));
-    cb(atCommand("at+mode0"));
-    cb(atCommand("at+namecontroller"));
-    cb(atCommand("at+reset"));
-    // cb(atCommand("at+con882583F32582"));
-    // cb(atCommand("at+conA4DA32550629"));
-    // cb(atCommand("at+start"));
+    // scan(cb);
+    // cb(atCommand("AT+START"));
+    // cb(atCommand("AT"));
+    // delay(1000);
+    // A434F1A1CC5B
+    // cb(atCommand("at+con882583F32582")); // cn41a/at-09
+    // return atCommand("AT+CONA4DA32550629"); // hm-19
+    // cb(atCommand("at+conE003CD881508")); // nanoble33
+    // menu connectMenu;
+    // char lineOne[] = "select comm protocol:";
+    // char lineTwo[] = "ble     rc";
+    // connectMenu.lineOne = lineOne;
+    // connectMenu.lineTwo = lineTwo;
+}
 
-    pinMode(searchPin, INPUT_PULLUP);
-    attachInterrupt(searchPin, func, CHANGE);
+void Tx::start(void (*func)())
+{
+    // scan(cb);
+    // cb(atCommand("AT+NOTI1"));
+    // delay(2000);
+    // cb(atCommand("AT+PIO11"));
+    // delay(1500);
+    // cb(atCommand("AT+IMME1"));
+    // delay(1500);
+    // cb(atCommand("AT+ROLE1"));
+    // delay(1500);
+    // cb(atCommand("AT+MODE2"));
+    // delay(1500);
+
+    // pinMode(searchPin, INPUT_PULLUP);
+    // attachInterrupt(searchPin, func, FALLING);
+    initRc();
 }
 
 bool Tx::isConnected()
 {
-    bool c = digitalRead(10) == HIGH;
-    connected = c;
-    return c;
+    return digitalRead(10) == HIGH;
 }
 
-String Tx::atCommand(char *cmd)
+menu Tx::atCommand(char *cmd)
 {
-    String atLine = "";
+    menu lines;
+    lines.lineOne = cmd;
+    char atLine[16] = {0};
     char _cmd[20];
     strcpy(_cmd, cmd);
     strcat(_cmd, "\r\n");
@@ -64,9 +80,63 @@ String Tx::atCommand(char *cmd)
     {
         if (Serial1.available() > 0)
         {
-            atLine = Serial1.readStringUntil('\n');
-            return atLine;
+            Serial1.readBytesUntil('\n', atLine, sizeof(atLine));
+            lines.lineTwo = atLine;
         }
     }
-    return atLine;
+    return lines;
+}
+
+void Tx::initRc()
+{
+    // initialize the transceiver on the SPI bus
+    radio.begin();
+
+    radio.setPALevel(RF24_PA_LOW); // RF24_PA_MAX is default.
+
+    // save on transmission time by setting the radio to only transmit the
+    // number of bytes we need to transmit
+    radio.setPayloadSize(packetSize); // default value is the maximum 32 bytes
+
+    // set the TX address of the RX node into the TX pipe
+    radio.openWritingPipe(address[radioNumber]); // always uses pipe 0
+
+    // set the RX address of the TX node into a RX pipe
+    // radio.openReadingPipe(botRadioNumber, address[botRadioNumber]); // using pipe 1
+
+    radio.stopListening(); // put radio in TX mode
+
+    failures = 0;
+
+    // For debugging info
+    // printf_begin();             // needed only once for printing details
+    // radio.printDetails();       // (smaller) function that prints raw register values
+    // radio.printPrettyDetails(); // (larger) function that prints human readable data
+}
+
+void Tx::sendPacket()
+{
+    // if (isConnected())
+    // {
+    //     serializeJson(packet, Serial1);
+    // }
+    radio.flush_tx();
+
+    if (!radio.write(&packet, packetSize))
+    {
+        failures++;
+        radio.reUseTX();
+    }
+    else
+    {
+        failures = 0;
+    }
+
+    if (failures >= 200)
+    {
+        Serial.println(F("Too many failures detected. Restarting."));
+        radio.powerDown();
+        radio.powerUp();
+        initRc();
+    }
 }

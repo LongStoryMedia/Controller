@@ -1,4 +1,4 @@
-#include "Lcd.h"
+#include "config.h"
 
 void Lcd::start()
 {
@@ -11,13 +11,13 @@ void Lcd::start()
     screen.print(F("PCF8574 is OK...")); //(F()) saves string to flash & keeps dynamic memory free
 }
 
-uint32_t Lcd::refreshDisplay(JsonVariant doc)
+uint32_t Lcd::refreshDisplay(Packet &packet)
 {
     // we should't update this often, but don't want to delay the whole program
-    if (millis() - lastRefresh > 1000)
+    if (micros() - lastRefresh > 1000000)
     {
-        writeEuler(doc["pitch"], doc["roll"], doc["yaw"], doc["thrust"]);
-        lastRefresh = millis();
+        writeEuler(packet.pitch, packet.roll, packet.yaw, packet.thrust);
+        lastRefresh = micros();
     }
 }
 
@@ -34,7 +34,7 @@ void Lcd::writeLabels()
     screen.print(F("T:"));
 }
 
-void Lcd::writeEuler(int16_t pitch, int16_t roll, int16_t yaw, int16_t throttle)
+void Lcd::writeEuler(int16_t pitch, int16_t roll, int16_t yaw, int16_t thrust)
 {
     writeLabels();
     screen.setCursor(2, 0);
@@ -44,62 +44,38 @@ void Lcd::writeEuler(int16_t pitch, int16_t roll, int16_t yaw, int16_t throttle)
     screen.setCursor(9, 0);
     screen.print(yaw);
     screen.setCursor(9, 1);
-    screen.print(throttle);
+    screen.print(thrust);
 }
 
-void Lcd::writeLineOne(char *line)
+void Lcd::writeLine(char *line, row r)
 {
-    screen.clear();
-    screen.home();
+    if (r == row::one)
+    {
+        screen.clear();
+    }
+    screen.setCursor(0, r);
+    // screen.scrollDisplayLeft();
     screen.print(line);
 }
 
-void Lcd::writeLineOne(String line)
+void Lcd::writeLine(String line, row r)
 {
-    screen.clear();
-    screen.home();
+    if (r == row::one)
+    {
+        screen.clear();
+    }
+    screen.setCursor(0, r);
+    // screen.scrollDisplayLeft();
     screen.print(line);
 }
 
-void Lcd::writeLineOne(const __FlashStringHelper *line)
+void Lcd::writeLine(const __FlashStringHelper *line, row r)
 {
-    screen.clear();
-    screen.home();
-    screen.print(line);
-}
-
-void Lcd::writeLineTwo(char *line)
-{
-    screen.setCursor(0, 1);
-    screen.print(line);
-}
-
-void Lcd::writeLineTwo(String line)
-{
-    screen.setCursor(0, 1);
-    screen.print(line);
-}
-
-void Lcd::writeLineTwo(const __FlashStringHelper *line)
-{
-    screen.setCursor(0, 1);
-    screen.print(line);
-}
-
-void Lcd::writeLine(char *line)
-{
-    screen.scrollDisplayLeft();
-    screen.print(line);
-}
-
-void Lcd::writeLine(String line)
-{
-    screen.scrollDisplayLeft();
-    screen.print(line);
-}
-
-void Lcd::writeLine(const __FlashStringHelper *line)
-{
-    screen.scrollDisplayLeft();
+    if (r == row::one)
+    {
+        screen.clear();
+    }
+    screen.setCursor(0, r);
+    // screen.scrollDisplayLeft();
     screen.print(line);
 }
