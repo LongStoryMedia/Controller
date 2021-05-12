@@ -21,11 +21,10 @@ class Tx
 {
 private:
     // pins
-    static const uint8_t thrustPin = A0;
-    static const uint8_t yawPin = A1;
-    static const uint8_t rollPin = A2;
-    static const uint8_t pitchPin = A3;
-    static const uint8_t searchPin = 9;
+    static const uint8_t thrustPin = THRUST_PIN;
+    static const uint8_t yawPin = YAW_PIN;
+    static const uint8_t rollPin = ROLL_PIN;
+    static const uint8_t pitchPin = PITCH_PIN;
     static const uint8_t radioNumber = 1;
     static const uint8_t botRadioNumber = 0;
     static const uint8_t packetSize = sizeof(Packet);
@@ -44,7 +43,7 @@ public:
     void start(void (*func)());
     menu hummingbirdConnect();
     bool isConnected();
-    RF24 radio = RF24(10, 8);
+    RF24 radio = RF24(CE_PIN, CSN_PIN);
     Packet packet;
 };
 

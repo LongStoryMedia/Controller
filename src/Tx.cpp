@@ -1,4 +1,5 @@
 #include "config.h"
+// #include "printf.h"
 
 #if defined RC
 uint8_t address[][6] = {"bird", "nest"};
@@ -6,15 +7,10 @@ uint8_t address[][6] = {"bird", "nest"};
 
 void Tx::prepare()
 {
-    thrust = constrain(map(analogRead(thrustPin), 55, 905, 0, 180), 0, 180);
-    roll = constrain(map(analogRead(rollPin), 0, 1023, -180, 180), -180, 180);
-    pitch = constrain(map(analogRead(pitchPin), 0, 1015, -180, 180), -180, 180);
-    yaw = constrain(map(analogRead(yawPin), 90, 910, 180, -180), -180, 180);
-    // dead zones
-    packet.yaw = yaw < 10 && yaw > -10 ? 0 : yaw;
-    packet.pitch = pitch < 10 && pitch > -10 ? 0 : pitch;
-    packet.roll = roll < 10 && roll > -10 ? 0 : roll;
-    packet.thrust = thrust;
+    packet.thrust = constrain(map(analogRead(thrustPin), 50, JOYSTICK_RANGE, 100, 0), 0, 100);
+    packet.roll = constrain(map(analogRead(rollPin), 50, JOYSTICK_RANGE, 10, -10), -10, 10);
+    packet.pitch = constrain(map(analogRead(pitchPin), 50, JOYSTICK_RANGE, -10, 10), -10, 10);
+    packet.yaw = constrain(map(analogRead(yawPin), 50, JOYSTICK_RANGE, -10, 10), -10, 10);
 }
 
 void Tx::scan(atCb cb)
@@ -74,15 +70,15 @@ menu Tx::atCommand(char *cmd)
     char _cmd[20];
     strcpy(_cmd, cmd);
     strcat(_cmd, "\r\n");
-    Serial1.print(_cmd);
+    // Serial1.print(_cmd);
     uint32_t t = millis();
     while (t > millis() - 3500)
     {
-        if (Serial1.available() > 0)
-        {
-            Serial1.readBytesUntil('\n', atLine, sizeof(atLine));
-            lines.lineTwo = atLine;
-        }
+        // if (Serial1.available() > 0)
+        // {
+        //     Serial1.readBytesUntil('\n', atLine, sizeof(atLine));
+        //     lines.lineTwo = atLine;
+        // }
     }
     return lines;
 }
@@ -106,6 +102,9 @@ void Tx::initRc()
 
     radio.stopListening(); // put radio in TX mode
 
+    radio.enableDynamicAck();
+    radio.setAutoAck(true);
+
     failures = 0;
 
     // For debugging info
@@ -116,27 +115,31 @@ void Tx::initRc()
 
 void Tx::sendPacket()
 {
-    // if (isConnected())
-    // {
-    //     serializeJson(packet, Serial1);
-    // }
     radio.flush_tx();
 
     if (!radio.write(&packet, packetSize))
     {
         failures++;
+        Serial.print(packet.thrust);
+        Serial.println(F(" - nc"));
         radio.reUseTX();
     }
     else
     {
+        Serial.print(packet.thrust);
+        Serial.println(F(" - c!"));
         failures = 0;
     }
 
-    if (failures >= 200)
+    if (failures >= 10)
     {
         Serial.println(F("Too many failures detected. Restarting."));
         radio.powerDown();
+        radio.flush_tx();
+        delay(1000);
+        radio.flush_tx();
         radio.powerUp();
+        radio.flush_tx();
         initRc();
     }
 }

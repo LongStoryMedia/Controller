@@ -1,17 +1,26 @@
 #include "config.h"
 
 Tx tx;
+#ifndef TFT
 Lcd lcd;
+#endif
 void loopRate(int freq);
 void hbConnectInterrupt();
 uint32_t t;
+
+// const static uint8_t MOSIPIN = 26;
+// const static uint8_t MISOPIN = 27;
+// const static uint8_t SCKPIN = 25;
 
 void setup()
 {
   Serial.begin(9600);
   Serial1.begin(38400);
+  // SPI.begin(SCKPIN, MISOPIN, MOSIPIN, CE_PIN);
   tx.start(hbConnectInterrupt);
-  lcd.start();
+#ifndef TFT
+  // lcd.start();
+#endif
   Serial1.flush();
 }
 
@@ -20,9 +29,11 @@ void loop()
   t = micros();
   tx.prepare();
   tx.sendPacket();
-  lcd.refreshDisplay(tx.packet);
-  loopRate(200000); //do not exceed 2000Hz, all filter parameters tuned to 2000Hz by default
-  // Serial1.flush();
+#ifndef TFT
+  // lcd.refreshDisplay(tx.packet);
+#endif
+  // delay(50);
+  Serial1.flush();
 }
 
 void loopRate(int freq)
@@ -47,8 +58,10 @@ void loopRate(int freq)
 
 void hbConnectInterrupt()
 {
+#ifndef TFT
   lcd.writeLine("Connecting...", row::one);
   menu commands = tx.hummingbirdConnect();
   lcd.writeLine(commands.lineOne, row::one);
   lcd.writeLine(commands.lineTwo, row::two);
+#endif
 }

@@ -1,5 +1,7 @@
 #include "config.h"
 
+#ifndef TFT
+
 void Lcd::start()
 {
     while (screen.begin(COLUMS, ROWS, LCD_5x8DOTS) != 1) //colums - 20, rows - 4, pixels - 5x8
@@ -10,8 +12,7 @@ void Lcd::start()
 
     screen.print(F("PCF8574 is OK...")); //(F()) saves string to flash & keeps dynamic memory free
 }
-
-uint32_t Lcd::refreshDisplay(Packet &packet)
+void Lcd::refreshDisplay(Packet &packet)
 {
     // we should't update this often, but don't want to delay the whole program
     if (micros() - lastRefresh > 1000000)
@@ -79,3 +80,4 @@ void Lcd::writeLine(const __FlashStringHelper *line, row r)
     // screen.scrollDisplayLeft();
     screen.print(line);
 }
+#endif

@@ -10,6 +10,7 @@ typedef enum
     two
 } row;
 
+#ifndef TFT
 class Lcd
 {
 private:
@@ -23,7 +24,7 @@ public:
     void writeLine(const __FlashStringHelper *lineOne, row row);
     void writeLine(char *lineOne, row row);
     void writeLine(String lineOne, row row);
-    uint32_t refreshDisplay(Packet &packet);
+    void refreshDisplay(Packet &packet);
 };
-
+#endif
 #endif
