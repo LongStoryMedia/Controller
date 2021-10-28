@@ -8,18 +8,13 @@ void loopRate(int freq);
 void hbConnectInterrupt();
 uint32_t t;
 
-// const static uint8_t MOSIPIN = 26;
-// const static uint8_t MISOPIN = 27;
-// const static uint8_t SCKPIN = 25;
-
 void setup()
 {
   Serial.begin(9600);
   Serial1.begin(38400);
-  // SPI.begin(SCKPIN, MISOPIN, MOSIPIN, CE_PIN);
   tx.start(hbConnectInterrupt);
 #ifndef TFT
-  // lcd.start();
+  lcd.start();
 #endif
   Serial1.flush();
 }
@@ -30,7 +25,7 @@ void loop()
   tx.prepare();
   tx.sendPacket();
 #ifndef TFT
-  // lcd.refreshDisplay(tx.packet);
+  lcd.refreshDisplay(tx.packet);
 #endif
   // delay(50);
   Serial1.flush();

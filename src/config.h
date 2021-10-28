@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define DEBUG false
+
 #include <Arduino.h>
 #include <Wire.h>
 #if defined TFT

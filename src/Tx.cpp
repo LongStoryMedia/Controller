@@ -7,10 +7,32 @@ uint8_t address[][6] = {"bird", "nest"};
 
 void Tx::prepare()
 {
-    packet.thrust = constrain(map(analogRead(thrustPin), 50, JOYSTICK_RANGE, 100, 0), 0, 100);
-    packet.roll = constrain(map(analogRead(rollPin), 50, JOYSTICK_RANGE, 10, -10), -10, 10);
-    packet.pitch = constrain(map(analogRead(pitchPin), 50, JOYSTICK_RANGE, -10, 10), -10, 10);
-    packet.yaw = constrain(map(analogRead(yawPin), 50, JOYSTICK_RANGE, -10, 10), -10, 10);
+    packet.thrust = constrain(map(analogRead(thrustPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, 100, 0), 0, 100);
+    packet.roll = constrain(map(analogRead(rollPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, 50, -50), -50, 50);
+    packet.pitch = constrain(map(analogRead(pitchPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, -50, 50), -50, 50);
+    packet.yaw = constrain(map(analogRead(yawPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, -50, 50), -50, 50);
+    packet.thrust = packet.thrust < 5 ? 0 : packet.thrust;
+    packet.roll = packet.roll > -5 && packet.roll < 5 ? 0 : packet.roll;
+    packet.pitch = packet.pitch > -5 && packet.pitch < 5 ? 0 : packet.pitch;
+    packet.yaw = packet.yaw > -5 && packet.yaw < 5 ? 0 : packet.yaw;
+#if DEBUG
+    Serial.print("adjusted: \t");
+    Serial.print(packet.yaw);
+    Serial.print("\t");
+    Serial.print(packet.pitch);
+    Serial.print("\t");
+    Serial.print(packet.roll);
+    Serial.print("\t");
+    Serial.print(packet.thrust);
+    Serial.print("\t actual: \t");
+    Serial.print(analogRead(yawPin));
+    Serial.print("\t");
+    Serial.print(analogRead(pitchPin));
+    Serial.print("\t");
+    Serial.print(analogRead(rollPin));
+    Serial.print("\t");
+    Serial.println(analogRead(thrustPin));
+#endif
 }
 
 void Tx::scan(atCb cb)
@@ -120,14 +142,10 @@ void Tx::sendPacket()
     if (!radio.write(&packet, packetSize))
     {
         failures++;
-        Serial.print(packet.thrust);
-        Serial.println(F(" - nc"));
         radio.reUseTX();
     }
     else
     {
-        Serial.print(packet.thrust);
-        Serial.println(F(" - c!"));
         failures = 0;
     }
 
