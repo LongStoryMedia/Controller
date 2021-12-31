@@ -10,10 +10,10 @@
 #else
 #include <LiquidCrystal_I2C.h>
 #endif
-#include <ArduinoJson.h>
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
+#include <WiFi.h>
 
 #include "Tx.h"
 #include "Lcd.h"

@@ -7,32 +7,14 @@ uint8_t address[][6] = {"bird", "nest"};
 
 void Tx::prepare()
 {
-    packet.thrust = constrain(map(analogRead(thrustPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, 100, 0), 0, 100);
-    packet.roll = constrain(map(analogRead(rollPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, 50, -50), -50, 50);
-    packet.pitch = constrain(map(analogRead(pitchPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, -50, 50), -50, 50);
-    packet.yaw = constrain(map(analogRead(yawPin), JOYSTICK_RANGE_LOW, JOYSTICK_RANGE_HIGH, -50, 50), -50, 50);
-    packet.thrust = packet.thrust < 5 ? 0 : packet.thrust;
-    packet.roll = packet.roll > -5 && packet.roll < 5 ? 0 : packet.roll;
-    packet.pitch = packet.pitch > -5 && packet.pitch < 5 ? 0 : packet.pitch;
-    packet.yaw = packet.yaw > -5 && packet.yaw < 5 ? 0 : packet.yaw;
-#if DEBUG
-    Serial.print("adjusted: \t");
-    Serial.print(packet.yaw);
-    Serial.print("\t");
-    Serial.print(packet.pitch);
-    Serial.print("\t");
-    Serial.print(packet.roll);
-    Serial.print("\t");
-    Serial.print(packet.thrust);
-    Serial.print("\t actual: \t");
-    Serial.print(analogRead(yawPin));
-    Serial.print("\t");
-    Serial.print(analogRead(pitchPin));
-    Serial.print("\t");
-    Serial.print(analogRead(rollPin));
-    Serial.print("\t");
-    Serial.println(analogRead(thrustPin));
-#endif
+    packet.thrust = constrain(map(analogRead(thrustPin), 0, 3600, 1000, 0), 0, 1000);
+    packet.roll = constrain(map(analogRead(rollPin), 100, 3700, -500, 500), -500, 500);
+    packet.pitch = constrain(map(analogRead(pitchPin), 100, 3550, 500, -500), -500, 500);
+    packet.yaw = constrain(map(analogRead(yawPin), 100, 3700, -500, 500), -500, 500);
+    packet.thrust = packet.thrust < 25 ? 0 : packet.thrust;
+    packet.roll = packet.roll > -25 && packet.roll < 25 ? 0 : packet.roll;
+    packet.pitch = packet.pitch > -25 && packet.pitch < 25 ? 0 : packet.pitch;
+    packet.yaw = packet.yaw > -25 && packet.yaw < 25 ? 0 : packet.yaw;
 }
 
 void Tx::scan(atCb cb)
@@ -43,39 +25,8 @@ void Tx::scan(atCb cb)
     delay(2000);
 }
 
-menu Tx::hummingbirdConnect()
+void Tx::start()
 {
-    // scan(cb);
-    // cb(atCommand("AT+START"));
-    // cb(atCommand("AT"));
-    // delay(1000);
-    // A434F1A1CC5B
-    // cb(atCommand("at+con882583F32582")); // cn41a/at-09
-    // return atCommand("AT+CONA4DA32550629"); // hm-19
-    // cb(atCommand("at+conE003CD881508")); // nanoble33
-    // menu connectMenu;
-    // char lineOne[] = "select comm protocol:";
-    // char lineTwo[] = "ble     rc";
-    // connectMenu.lineOne = lineOne;
-    // connectMenu.lineTwo = lineTwo;
-}
-
-void Tx::start(void (*func)())
-{
-    // scan(cb);
-    // cb(atCommand("AT+NOTI1"));
-    // delay(2000);
-    // cb(atCommand("AT+PIO11"));
-    // delay(1500);
-    // cb(atCommand("AT+IMME1"));
-    // delay(1500);
-    // cb(atCommand("AT+ROLE1"));
-    // delay(1500);
-    // cb(atCommand("AT+MODE2"));
-    // delay(1500);
-
-    // pinMode(searchPin, INPUT_PULLUP);
-    // attachInterrupt(searchPin, func, FALLING);
     initRc();
 }
 
@@ -92,15 +43,14 @@ menu Tx::atCommand(char *cmd)
     char _cmd[20];
     strcpy(_cmd, cmd);
     strcat(_cmd, "\r\n");
-    // Serial1.print(_cmd);
     uint32_t t = millis();
     while (t > millis() - 3500)
     {
-        // if (Serial1.available() > 0)
-        // {
-        //     Serial1.readBytesUntil('\n', atLine, sizeof(atLine));
-        //     lines.lineTwo = atLine;
-        // }
+        if (Serial1.available() > 0)
+        {
+            Serial1.readBytesUntil('\n', atLine, sizeof(atLine));
+            lines.lineTwo = atLine;
+        }
     }
     return lines;
 }
@@ -153,8 +103,6 @@ void Tx::sendPacket()
     {
         Serial.println(F("Too many failures detected. Restarting."));
         radio.powerDown();
-        radio.flush_tx();
-        delay(1000);
         radio.flush_tx();
         radio.powerUp();
         radio.flush_tx();
