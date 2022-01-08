@@ -10,7 +10,7 @@ void Tx::prepare()
     packet.thrust = constrain(map(analogRead(thrustPin), 0, 3600, 1000, 0), 0, 1000);
     packet.roll = constrain(map(analogRead(rollPin), 100, 3700, -500, 500), -500, 500);
     packet.pitch = constrain(map(analogRead(pitchPin), 100, 3550, 500, -500), -500, 500);
-    packet.yaw = constrain(map(analogRead(yawPin), 100, 3700, -500, 500), -500, 500);
+    packet.yaw = constrain(map(analogRead(yawPin), 100, 3550, -500, 500), -500, 500);
     packet.thrust = packet.thrust < 25 ? 0 : packet.thrust;
     packet.roll = packet.roll > -25 && packet.roll < 25 ? 0 : packet.roll;
     packet.pitch = packet.pitch > -25 && packet.pitch < 25 ? 0 : packet.pitch;
